@@ -1,0 +1,146 @@
+version: 2.1
+
+orbs:
+  ci-caching: serbiatech/ci-caching@0.0.3
+
+jobs:
+
+  # Install dependencies job
+
+  install-dependencies-with-docker:
+    machine: true
+    parameters:
+      dependencyCheckSumFile:
+        type: string
+        default: "./composer.lock"
+      dependencyCachePath:
+        type: string
+        default: "./vendor"
+      dependencyAdditionalCacheKey:
+        type: string
+        default: "v1"
+      sshKeyFilename:
+        type: string
+        default: "docker_rsa"
+      sshFingerprint:
+        type: string
+        default: ""
+      dockerImageTag:
+        type: string
+        default: "ci-composer"
+      dockerFolder:
+        type: string
+        default: "./docker/composer"
+      dockerAdditionalCacheKey:
+        type: string
+        default: "v1"
+      localMountPath:
+        type: string
+        default: "${PWD}"
+      dockerVolumePath:
+        type: string
+        default: "/var/www/html"
+      installCommand:
+        type: string
+        default: "install"
+    steps:
+      - install-dependencies-with-docker-command:
+          dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+          dependencyCachePath: << parameters.dependencyCachePath >>
+          dependencyAdditionalCacheKey: << parameters.dependencyAdditionalCacheKey >>
+          sshKeyFilename: << parameters.sshKeyFilename >>
+          sshFingerprint: << parameters.sshFingerprint >>
+          dockerImageTag: << parameters.dockerImageTag >>
+          dockerFolder: << parameters.dockerFolder >>
+          dockerAdditionalCacheKey: << parameters.dockerAdditionalCacheKey >>
+          dockerVolumePath: << parameters.dockerVolumePath >>
+          localMountPath: << parameters.localMountPath >>
+          installCommand: << parameters.installCommand >>
+
+commands:
+
+  # Add SSH key command
+
+  add-ssh-key-command:
+    parameters:
+      sshKeyFilename:
+        type: string
+        default: "docker_rsa"
+      sshFingerprint:
+        type: string
+        default: ""
+    steps:
+      - when:
+          condition: << parameters.sshFingerprint >>
+          steps:
+            - add_ssh_keys:
+                fingerprints:
+                  - << parameters.sshFingerprint >>
+            - run:
+                name: Copy ssh key
+                command: |
+                  SSH_FINGERPRINT=<< parameters.sshFingerprint >>
+                  cp ~/.ssh/id_rsa_"${SSH_FINGERPRINT//:}" ~/.ssh/<< parameters.sshKeyFilename >>
+
+  # Install dependencies with docker
+
+  install-dependencies-with-docker-command:
+    parameters:
+      dependencyCheckSumFile:
+        type: string
+        default: "./composer.lock"
+      dependencyCachePath:
+        type: string
+        default: "./vendor"
+      dependencyAdditionalCacheKey:
+        type: string
+        default: "v1"
+      sshKeyFilename:
+        type: string
+        default: "docker_rsa"
+      sshFingerprint:
+        type: string
+        default: ""
+      installCommand:
+        type: string
+        default: "install"
+      dockerImageTag:
+        type: string
+        default: "ci-composer"
+      dockerFolder:
+        type: string
+        default: "./docker/composer"
+      localMountPath:
+        type: string
+        default: "${PWD}"
+      dockerVolumePath:
+        type: string
+        default: "/var/www/html"
+      dockerAdditionalCacheKey:
+        type: string
+        default: "v1"
+    steps:
+      - checkout
+      - ci-caching/dependency-cache-load:
+          checkSumFile: << parameters.dependencyCheckSumFile >>
+          additionalCacheKey: << parameters.dependencyAdditionalCacheKey >>
+      - ci-caching/dependency-check:
+          cacheDataPath: << parameters.dependencyCachePath >>
+      - add-ssh-key-command:
+          sshKeyFilename: << parameters.sshKeyFilename >>
+          sshFingerprint: << parameters.sshFingerprint >>
+      - ci-caching/docker-images-cache-load:
+          dockerCheckSumDir: << parameters.dockerFolder >>
+          additionalCacheKey: << parameters.dockerAdditionalCacheKey >>
+          baseCacheName: << parameters.dockerImageTag >>
+      - ci-caching/docker-layers-load:
+          cacheFile: ~/<< parameters.dockerImageTag >>.tar
+      - run:
+          name: Install php dependencies
+          command: |
+            docker run --rm -v ~/.ssh/<< parameters.sshKeyFilename >>:/home/www-data/.ssh/id_rsa:ro -v "<< parameters.localMountPath >>":<< parameters.dockerVolumePath >> << parameters.dockerImageTag >> << parameters.installCommand >>
+      - ci-caching/dependency-cache-save:
+          checkSumFile: << parameters.dependencyCheckSumFile >>
+          cacheDataPath: << parameters.dependencyCachePath >>
+          additionalCacheKey: << parameters.dependencyAdditionalCacheKey >>
+

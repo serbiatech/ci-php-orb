@@ -1,0 +1,25 @@
+version: 2.1
+
+orbs:
+  orb-tools: circleci/orb-tools@8.27.4
+
+workflows:
+  lint-publish:
+    jobs:
+      - orb-tools/lint:
+          lint-dir: '../'
+      - approve-orb-publish:
+          type: approval
+          requires:
+            - orb-tools/lint
+          filters:
+            branches:
+              only:
+                - master
+      - orb-tools/increment:
+          requires:
+            - approve-orb-publish
+          context: circle_orb_publishing
+          orb-path: 'orb.yml'
+          orb-ref: serbiatech/ci-php
+          segment: 'minor'
