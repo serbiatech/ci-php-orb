@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  ci-caching: serbiatech/ci-caching@0.0.4
+  ci-caching: serbiatech/ci-caching@0.0.5
 
 jobs:
 
@@ -83,6 +83,12 @@ jobs:
       command:
         type: string
         default: "run coverage"
+      dockerTimezone:
+        type: string
+        default: "UTC"
+      dockerLanguage:
+        type: string
+        default: "en_US.UTF-8"
     steps:
       - coverage-command:
           coverageDir: << parameters.coverageDir >>
@@ -92,6 +98,8 @@ jobs:
           dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
 #          hostToWaitFor: << parameters.hostToWaitFor >>
           command: << parameters.command >>
+          dockerTimezone: << parameters.dockerTimezone >>
+          dockerLanguage: << parameters.dockerLanguage >>
 
 commands:
 
@@ -199,12 +207,18 @@ commands:
       dependencyCheckSumFile:
         type: string
         default: "./composer.lock"
-      hostToWaitFor:
-        type: string
-        default: "composer"
+#      hostToWaitFor:
+#        type: string
+#        default: "composer"
       command:
         type: string
         default: "run coverage"
+      dockerTimezone:
+        type: string
+        default: "UTC"
+      dockerLanguage:
+        type: string
+        default: "en_US.UTF-8"
     steps:
       - ci-caching/run-docker-from-restored-caches:
           dockerCheckSumDir: << parameters.dockerCheckSumDir >>
@@ -217,11 +231,6 @@ commands:
           container: composer
           dockerComposeFile: << parameters.dockerComposeFile >>
           command: << parameters.command >>
-#      - ci-caching/execute-in-container:
-#          info: Execute tests with code coverage
-#          container: php
-#          dockerComposeFile: << parameters.dockerComposeFile >>
-#          command: << parameters.command >>
       - store_artifacts:
           path: << parameters.coverageDir >>
       - store_test_results:
