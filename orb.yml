@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  ci-caching: serbiatech/ci-caching@0.0.3
+  ci-caching: serbiatech/ci-caching@0.0.4
 
 jobs:
 
@@ -56,6 +56,42 @@ jobs:
           dockerVolumePath: << parameters.dockerVolumePath >>
           localMountPath: << parameters.localMountPath >>
           installCommand: << parameters.installCommand >>
+
+  # Run coverage
+
+  coverage:
+    machine: true
+    parameters:
+      coverageDir:
+        type: string
+        default: "./build/logs/phpunit/coverage"
+      testResultDir:
+        type: string
+        default: "./build/logs/phpunit"
+      dockerComposeFile:
+        type: string
+        default: "./docker/docker-compose.ci.yml"
+      dockerCheckSumDir:
+        type: string
+        default: "./docker"
+      dependencyCheckSumFile:
+        type: string
+        default: "./composer.lock"
+#      hostToWaitFor:
+#        type: string
+#        default: ""
+      command:
+        type: string
+        default: "run coverage"
+    steps:
+      - coverage-command:
+          coverageDir: << parameters.coverageDir >>
+          testResultDir: << parameters.testResultDir >>
+          dockerComposeFile: << parameters.dockerComposeFile >>
+          dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+          dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+#          hostToWaitFor: << parameters.hostToWaitFor >>
+          command: << parameters.command >>
 
 commands:
 
@@ -144,3 +180,73 @@ commands:
           cacheDataPath: << parameters.dependencyCachePath >>
           additionalCacheKey: << parameters.dependencyAdditionalCacheKey >>
 
+  # Coverage command
+
+  coverage-command:
+    parameters:
+      coverageDir:
+        type: string
+        default: "./build/logs/phpunit/coverage"
+      testResultDir:
+        type: string
+        default: "./build/logs/phpunit"
+      dockerComposeFile:
+        type: string
+        default: "./docker/docker-compose.ci.yml"
+      dockerCheckSumDir:
+        type: string
+        default: "./docker"
+      dependencyCheckSumFile:
+        type: string
+        default: "./composer.lock"
+      hostToWaitFor:
+        type: string
+        default: "composer"
+      command:
+        type: string
+        default: "run coverage"
+    steps:
+      - ci-caching/run-docker-from-restored-caches:
+          dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+          dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+          dockerComposeFile: << parameters.dockerComposeFile >>
+#      - wait-for-host-command:
+#          host: << parameters.hostToWaitFor >>
+      - ci-caching/execute-with-external-container:
+          info: Execute tests with code coverage
+          container: composer
+          dockerComposeFile: << parameters.dockerComposeFile >>
+          command: << parameters.command >>
+#      - ci-caching/execute-in-container:
+#          info: Execute tests with code coverage
+#          container: php
+#          dockerComposeFile: << parameters.dockerComposeFile >>
+#          command: << parameters.command >>
+      - store_artifacts:
+          path: << parameters.coverageDir >>
+      - store_test_results:
+          path: << parameters.testResultDir >>
+
+  # Wait for the host command
+
+#  wait-for-host-command:
+#    parameters:
+#      info:
+#        type: string
+#        default: "Wait for host"
+#      host:
+#        type: string
+#        default: ""
+#      container:
+#        type: string
+#        default: php
+#    steps:
+#      - when:
+#          condition: << parameters.host >>
+#          steps:
+#            - install-dockerize-command:
+#                container: php
+#            - ci-caching/execute-in-container:
+#                info: << parameters.info >>
+#                container: << parameters.container >>
+#                command: dockerize -wait << parameters.host >> -timeout 1m
