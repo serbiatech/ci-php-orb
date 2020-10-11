@@ -92,7 +92,7 @@ jobs:
         default: "./composer.lock"
       command:
         type: string
-        default: "run coverage"
+        default: "make coverage"
       dockerTimezone:
         type: string
         default: "UTC"
@@ -104,9 +104,9 @@ jobs:
           dockerCheckSumDir: << parameters.dockerCheckSumDir >>
           dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
           dockerComposeFile: << parameters.dockerComposeFile >>
-      - ci-caching/execute-with-external-container:
+      - ci-caching/execute-in-container:
           info: Execute tests with code coverage
-          container: composer
+          container: php
           dockerComposeFile: << parameters.dockerComposeFile >>
           command: << parameters.command >>
       - store_artifacts:
@@ -133,7 +133,7 @@ jobs:
         default: "./composer.lock"
       command:
         type: string
-        default: "run static-analysis"
+        default: "make static-analysis"
       dockerTimezone:
         type: string
         default: "UTC"
@@ -145,9 +145,9 @@ jobs:
           dockerCheckSumDir: << parameters.dockerCheckSumDir >>
           dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
           dockerComposeFile: << parameters.dockerComposeFile >>
-      - ci-caching/execute-with-external-container:
+      - ci-caching/execute-in-container:
           info: Execute static analysis tests
-          container: composer
+          container: php
           dockerComposeFile: << parameters.dockerComposeFile >>
           command: << parameters.command >>
       - store_test_results:
@@ -172,7 +172,7 @@ jobs:
         default: "./composer.lock"
       command:
         type: string
-        default: "run code-style"
+        default: "make code-style"
       dockerTimezone:
         type: string
         default: "UTC"
@@ -184,9 +184,9 @@ jobs:
           dockerCheckSumDir: << parameters.dockerCheckSumDir >>
           dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
           dockerComposeFile: << parameters.dockerComposeFile >>
-      - ci-caching/execute-with-external-container:
+      - ci-caching/execute-in-container:
           info: Execute code style tests
-          container: composer
+          container: php
           dockerComposeFile: << parameters.dockerComposeFile >>
           command: << parameters.command >>
       - store_test_results:
@@ -211,7 +211,7 @@ jobs:
         default: "./composer.lock"
       command:
         type: string
-        default: "run infection"
+        default: "make infection"
       dockerTimezone:
         type: string
         default: "UTC"
@@ -223,9 +223,9 @@ jobs:
           dockerCheckSumDir: << parameters.dockerCheckSumDir >>
           dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
           dockerComposeFile: << parameters.dockerComposeFile >>
-      - ci-caching/execute-with-external-container:
+      - ci-caching/execute-in-container:
           info: Execute infection tests
-          container: composer
+          container: php
           dockerComposeFile: << parameters.dockerComposeFile >>
           command: << parameters.command >>
       - store_test_results:
