@@ -106,7 +106,7 @@ jobs:
           dockerComposeFile: << parameters.dockerComposeFile >>
       - ci-caching/execute-in-container:
           info: Execute tests with code coverage
-          container: php
+          container: ci-php
           dockerComposeFile: << parameters.dockerComposeFile >>
           command: << parameters.command >>
       - store_artifacts:
