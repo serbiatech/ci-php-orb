@@ -1,0 +1,35 @@
+description: >
+  This job is for running code style.
+
+parameters:
+  csResultDir:
+    type: string
+    default: "./build/logs/phpcs"
+  dockerComposeFile:
+    type: string
+    default: "./docker/docker-compose.ci.yml"
+  dockerCheckSumDir:
+    type: string
+    default: "./docker"
+  dependencyCheckSumFile:
+    type: string
+    default: "./composer.lock"
+  command:
+    type: string
+    default: "make code-style"
+  dockerTimezone:
+    type: string
+    default: "UTC"
+  dockerLanguage:
+    type: string
+    default: "en_US.UTF-8"
+machine: true
+steps:
+  - code-style-command:
+      csResultDir: << parameters.csResultDir >>
+      dockerComposeFile: << parameters.dockerComposeFile >>
+      dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+      dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+      command: << parameters.command >>
+      dockerTimezone: << parameters.dockerTimezone >>
+      dockerLanguage: << parameters.dockerLanguage >>

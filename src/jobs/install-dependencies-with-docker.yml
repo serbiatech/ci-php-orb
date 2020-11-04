@@ -1,0 +1,59 @@
+description: >
+  This job is for installing dependencies with docker.
+
+parameters:
+  dependencyCheckSumFile:
+    type: string
+    default: "./composer.lock"
+  dependencyCachePath:
+    type: string
+    default: "./vendor"
+  dependencyAdditionalCacheKey:
+    type: string
+    default: "v1"
+  sshKeyFilename:
+    type: string
+    default: "docker_rsa"
+  sshFingerprint:
+    type: string
+    default: ""
+  dockerImageTag:
+    type: string
+    default: "ci-composer"
+  dockerFolder:
+    type: string
+    default: "./docker/composer"
+  dockerAdditionalCacheKey:
+    type: string
+    default: "v1"
+  localMountPath:
+    type: string
+    default: "${PWD}"
+  dockerVolumePath:
+    type: string
+    default: "/var/www/html"
+  installCommand:
+    type: string
+    default: "install"
+  dockerTimezone:
+    type: string
+    default: "UTC"
+  dockerLanguage:
+    type: string
+    default: "en_US.UTF-8"
+machine: true
+steps:
+  - install-dependencies-with-docker-command:
+      dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+      dependencyCachePath: << parameters.dependencyCachePath >>
+      dependencyAdditionalCacheKey: << parameters.dependencyAdditionalCacheKey >>
+      sshKeyFilename: << parameters.sshKeyFilename >>
+      sshFingerprint: << parameters.sshFingerprint >>
+      dockerImageTag: << parameters.dockerImageTag >>
+      dockerFolder: << parameters.dockerFolder >>
+      dockerAdditionalCacheKey: << parameters.dockerAdditionalCacheKey >>
+      dockerVolumePath: << parameters.dockerVolumePath >>
+      localMountPath: << parameters.localMountPath >>
+      installCommand: << parameters.installCommand >>
+      dockerTimezone: << parameters.dockerTimezone >>
+      dockerLanguage: << parameters.dockerLanguage >>

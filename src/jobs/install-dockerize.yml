@@ -1,0 +1,19 @@
+description: >
+  This job is for installing dockerize.
+
+parameters:
+  container:
+    type: string
+    default: "php"
+  dockerTimezone:
+    type: string
+    default: "UTC"
+  dockerLanguage:
+    type: string
+    default: "en_US.UTF-8"
+machine: true
+steps:
+  - install-dockerize-command:
+      container: << parameters.container >>
+      dockerTimezone: << parameters.dockerTimezone >>
+      dockerLanguage: << parameters.dockerLanguage >>

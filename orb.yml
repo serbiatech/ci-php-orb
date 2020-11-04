@@ -1,589 +1,577 @@
+commands:
+    add-ssh-key-command:
+        description: |
+            This command add ssh key.
+        parameters:
+            sshFingerprint:
+                default: ""
+                type: string
+            sshKeyFilename:
+                default: docker_rsa
+                type: string
+        steps:
+            - when:
+                condition: << parameters.sshFingerprint >>
+                steps:
+                    - add_ssh_keys:
+                        fingerprints:
+                            - << parameters.sshFingerprint >>
+                    - run:
+                        command: |
+                            SSH_FINGERPRINT=<< parameters.sshFingerprint >>
+                            cp ~/.ssh/id_rsa_"${SSH_FINGERPRINT//:}" ~/.ssh/<< parameters.sshKeyFilename >>
+                        name: Copy ssh key
+    code-style-command:
+        description: |
+            This command run code-style tests.
+        parameters:
+            command:
+                default: make code-style
+                type: string
+            csResultDir:
+                default: ./build/logs/phpcs
+                type: string
+            dependencyCheckSumFile:
+                default: ./composer.lock
+                type: string
+            dockerCheckSumDir:
+                default: ./docker
+                type: string
+            dockerComposeFile:
+                default: ./docker/docker-compose.ci.yml
+                type: string
+            dockerLanguage:
+                default: en_US.UTF-8
+                type: string
+            dockerTimezone:
+                default: UTC
+                type: string
+        steps:
+            - ci-caching/run-docker-from-restored-caches:
+                dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+                dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+                dockerComposeFile: << parameters.dockerComposeFile >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+            - ci-caching/execute-in-container:
+                command: << parameters.command >>
+                container: php
+                dockerComposeFile: << parameters.dockerComposeFile >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+                info: Check code style
+            - store_test_results:
+                path: << parameters.csResultDir >>
+    coverage-command:
+        description: |
+            This command run coverage tests.
+        parameters:
+            command:
+                default: make coverage
+                type: string
+            coverageDir:
+                default: ./build/logs/phpunit/coverage
+                type: string
+            dependencyCheckSumFile:
+                default: ./composer.lock
+                type: string
+            dockerCheckSumDir:
+                default: ./docker
+                type: string
+            dockerComposeFile:
+                default: ./docker/docker-compose.ci.yml
+                type: string
+            dockerLanguage:
+                default: en_US.UTF-8
+                type: string
+            dockerTimezone:
+                default: UTC
+                type: string
+            hostToWaitFor:
+                default: ""
+                type: string
+            testResultDir:
+                default: ./build/logs/phpunit
+                type: string
+        steps:
+            - ci-caching/run-docker-from-restored-caches:
+                dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+                dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+                dockerComposeFile: << parameters.dockerComposeFile >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+            - wait-for-host-command:
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+                host: << parameters.hostToWaitFor >>
+            - ci-caching/execute-in-container:
+                command: << parameters.command >>
+                container: php
+                dockerComposeFile: << parameters.dockerComposeFile >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+                info: Execute tests with code coverage
+            - store_artifacts:
+                path: << parameters.coverageDir >>
+            - store_test_results:
+                path: << parameters.testResultDir >>
+    infection-testing-command:
+        description: |
+            This command run infection tests.
+        parameters:
+            command:
+                default: make infection
+                type: string
+            coverageDir:
+                default: ./build/logs/phpunit/coverage
+                type: string
+            dependencyCheckSumFile:
+                default: ./composer.lock
+                type: string
+            dockerCheckSumDir:
+                default: ./docker
+                type: string
+            dockerComposeFile:
+                default: ./docker/docker-compose.ci.yml
+                type: string
+            dockerLanguage:
+                default: en_US.UTF-8
+                type: string
+            dockerTimezone:
+                default: UTC
+                type: string
+            hostToWaitFor:
+                default: ""
+                type: string
+            infectionResultDir:
+                default: ./build/logs/infection
+                type: string
+        steps:
+            - ci-caching/run-docker-from-restored-caches:
+                dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+                dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+                dockerComposeFile: << parameters.dockerComposeFile >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+            - wait-for-host-command:
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+                host: << parameters.hostToWaitFor >>
+            - ci-caching/execute-in-container:
+                command: << parameters.command >>
+                container: php
+                dockerComposeFile: << parameters.dockerComposeFile >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+                info: Execute Infection Testing
+            - store_artifacts:
+                path: << parameters.infectionResultDir >>
+    install-dependencies-with-docker-command:
+        description: |
+            This command install dependencies from separate docker container.
+        parameters:
+            dependencyAdditionalCacheKey:
+                default: v1
+                type: string
+            dependencyCachePath:
+                default: ./vendor
+                type: string
+            dependencyCheckSumFile:
+                default: ./composer.lock
+                type: string
+            dockerAdditionalCacheKey:
+                default: v1
+                type: string
+            dockerFolder:
+                default: ./docker/composer
+                type: string
+            dockerImageTag:
+                default: ci-composer
+                type: string
+            dockerLanguage:
+                default: en_US.UTF-8
+                type: string
+            dockerTimezone:
+                default: UTC
+                type: string
+            dockerVolumePath:
+                default: /var/www/html
+                type: string
+            installCommand:
+                default: install
+                type: string
+            localMountPath:
+                default: ${PWD}
+                type: string
+            sshFingerprint:
+                default: ""
+                type: string
+            sshKeyFilename:
+                default: docker_rsa
+                type: string
+        steps:
+            - checkout
+            - ci-caching/dependency-cache-load:
+                additionalCacheKey: << parameters.dependencyAdditionalCacheKey >>
+                checkSumFile: << parameters.dependencyCheckSumFile >>
+            - ci-caching/dependency-check:
+                cacheDataPath: << parameters.dependencyCachePath >>
+            - add-ssh-key-command:
+                sshFingerprint: << parameters.sshFingerprint >>
+                sshKeyFilename: << parameters.sshKeyFilename >>
+            - ci-caching/docker-images-cache-load:
+                additionalCacheKey: << parameters.dockerAdditionalCacheKey >>
+                baseCacheName: << parameters.dockerImageTag >>
+                dockerCheckSumDir: << parameters.dockerFolder >>
+            - ci-caching/docker-layers-load:
+                cacheFile: ~/<< parameters.dockerImageTag >>.tar
+            - run:
+                command: |
+                    export ENV_USER_ID=$(id -u)
+                    export ENV_GROUP_ID=$(id -g)
+                    export ENV_LANGUAGE=<< parameters.dockerLanguage >>
+                    export ENV_TIMEZONE=<< parameters.dockerTimezone >>
+                    docker run -v ~/.ssh/<< parameters.sshKeyFilename >>:/home/www-data/.ssh/id_rsa:ro -v "<< parameters.localMountPath >>":<< parameters.dockerVolumePath >> << parameters.dockerImageTag >> << parameters.installCommand >>
+                name: Install php dependencies
+            - ci-caching/dependency-cache-save:
+                additionalCacheKey: << parameters.dependencyAdditionalCacheKey >>
+                cacheDataPath: << parameters.dependencyCachePath >>
+                checkSumFile: << parameters.dependencyCheckSumFile >>
+    install-dockerize-command:
+        description: |
+            This command install dockerize.
+        parameters:
+            container:
+                default: php
+                type: string
+            dockerLanguage:
+                default: en_US.UTF-8
+                type: string
+            dockerTimezone:
+                default: UTC
+                type: string
+        steps:
+            - ci-caching/execute-in-container:
+                command: |
+                    wget https://github.com/jwilder/dockerize/releases/download/v0.6.1/dockerize-alpine-linux-amd64-v0.6.1.tar.gz \
+                    && sudo tar -C /usr/local/bin -xzvf dockerize-alpine-linux-amd64-v0.6.1.tar.gz \
+                    && rm dockerize-alpine-linux-amd64-v0.6.1.tar.gz
+                container: << parameters.container >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+                info: Install dockerize in << parameters.container >> container
+    static-analysis-command:
+        description: |
+            This command run static analysis tests.
+        parameters:
+            command:
+                default: make static-analysis
+                type: string
+            dependencyCheckSumFile:
+                default: ./composer.lock
+                type: string
+            dockerCheckSumDir:
+                default: ./docker
+                type: string
+            dockerComposeFile:
+                default: ./docker/docker-compose.ci.yml
+                type: string
+            dockerLanguage:
+                default: en_US.UTF-8
+                type: string
+            dockerTimezone:
+                default: UTC
+                type: string
+            stanResultDir:
+                default: ./build/logs/phpstan
+                type: string
+        steps:
+            - ci-caching/run-docker-from-restored-caches:
+                dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+                dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+                dockerComposeFile: << parameters.dockerComposeFile >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+            - ci-caching/execute-in-container:
+                command: << parameters.command >>
+                container: php
+                dockerComposeFile: << parameters.dockerComposeFile >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+                info: Execute static analysis
+            - store_test_results:
+                path: << parameters.stanResultDir >>
+    wait-for-host-command:
+        description: |
+            This command set timout and wait for external host.
+        parameters:
+            container:
+                default: php
+                type: string
+            dockerLanguage:
+                default: en_US.UTF-8
+                type: string
+            dockerTimezone:
+                default: UTC
+                type: string
+            host:
+                default: ""
+                type: string
+            info:
+                default: Wait for host
+                type: string
+        steps:
+            - when:
+                condition: << parameters.host >>
+                steps:
+                    - install-dockerize-command:
+                        container: php
+                        dockerLanguage: << parameters.dockerLanguage >>
+                        dockerTimezone: << parameters.dockerTimezone >>
+                    - ci-caching/execute-in-container:
+                        command: dockerize -wait << parameters.host >> -timeout 1m
+                        container: << parameters.container >>
+                        dockerLanguage: << parameters.dockerLanguage >>
+                        dockerTimezone: << parameters.dockerTimezone >>
+                        info: << parameters.info >>
+description: |
+    This Orb provides commands and jobs for running PHP tests.
+jobs:
+    code-style:
+        description: |
+            This job is for running code style.
+        machine: true
+        parameters:
+            command:
+                default: make code-style
+                type: string
+            csResultDir:
+                default: ./build/logs/phpcs
+                type: string
+            dependencyCheckSumFile:
+                default: ./composer.lock
+                type: string
+            dockerCheckSumDir:
+                default: ./docker
+                type: string
+            dockerComposeFile:
+                default: ./docker/docker-compose.ci.yml
+                type: string
+            dockerLanguage:
+                default: en_US.UTF-8
+                type: string
+            dockerTimezone:
+                default: UTC
+                type: string
+        steps:
+            - code-style-command:
+                command: << parameters.command >>
+                csResultDir: << parameters.csResultDir >>
+                dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+                dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+                dockerComposeFile: << parameters.dockerComposeFile >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+    coverage:
+        description: |
+            This job is for running coverage.
+        machine: true
+        parameters:
+            command:
+                default: make coverage
+                type: string
+            coverageDir:
+                default: ./build/logs/phpunit/coverage
+                type: string
+            dependencyCheckSumFile:
+                default: ./composer.lock
+                type: string
+            dockerCheckSumDir:
+                default: ./docker
+                type: string
+            dockerComposeFile:
+                default: ./docker/docker-compose.ci.yml
+                type: string
+            dockerLanguage:
+                default: en_US.UTF-8
+                type: string
+            dockerTimezone:
+                default: UTC
+                type: string
+            hostToWaitFor:
+                default: ""
+                type: string
+            testResultDir:
+                default: ./build/logs/phpunit
+                type: string
+        steps:
+            - coverage-command:
+                command: << parameters.command >>
+                coverageDir: << parameters.coverageDir >>
+                dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+                dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+                dockerComposeFile: << parameters.dockerComposeFile >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+                hostToWaitFor: << parameters.hostToWaitFor >>
+                testResultDir: << parameters.testResultDir >>
+    infection:
+        description: |
+            This job is for running infection tests.
+        machine: true
+        parameters:
+            command:
+                default: make infection
+                type: string
+            coverageDir:
+                default: ./build/logs/phpunit/coverage
+                type: string
+            dependencyCheckSumFile:
+                default: ./composer.lock
+                type: string
+            dockerCheckSumDir:
+                default: ./docker
+                type: string
+            dockerComposeFile:
+                default: ./docker/docker-compose.ci.yml
+                type: string
+            dockerLanguage:
+                default: en_US.UTF-8
+                type: string
+            dockerTimezone:
+                default: UTC
+                type: string
+            hostToWaitFor:
+                default: ""
+                type: string
+            infectionResultDir:
+                default: ./build/logs/infection
+                type: string
+        steps:
+            - infection-testing-command:
+                command: << parameters.command >>
+                coverageDir: << parameters.coverageDir >>
+                dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+                dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+                dockerComposeFile: << parameters.dockerComposeFile >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+                hostToWaitFor: << parameters.hostToWaitFor >>
+                infectionResultDir: << parameters.infectionResultDir >>
+    install-dependencies-with-docker:
+        description: |
+            This job is for installing dependencies with docker.
+        machine: true
+        parameters:
+            dependencyAdditionalCacheKey:
+                default: v1
+                type: string
+            dependencyCachePath:
+                default: ./vendor
+                type: string
+            dependencyCheckSumFile:
+                default: ./composer.lock
+                type: string
+            dockerAdditionalCacheKey:
+                default: v1
+                type: string
+            dockerFolder:
+                default: ./docker/composer
+                type: string
+            dockerImageTag:
+                default: ci-composer
+                type: string
+            dockerLanguage:
+                default: en_US.UTF-8
+                type: string
+            dockerTimezone:
+                default: UTC
+                type: string
+            dockerVolumePath:
+                default: /var/www/html
+                type: string
+            installCommand:
+                default: install
+                type: string
+            localMountPath:
+                default: ${PWD}
+                type: string
+            sshFingerprint:
+                default: ""
+                type: string
+            sshKeyFilename:
+                default: docker_rsa
+                type: string
+        steps:
+            - install-dependencies-with-docker-command:
+                dependencyAdditionalCacheKey: << parameters.dependencyAdditionalCacheKey >>
+                dependencyCachePath: << parameters.dependencyCachePath >>
+                dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+                dockerAdditionalCacheKey: << parameters.dockerAdditionalCacheKey >>
+                dockerFolder: << parameters.dockerFolder >>
+                dockerImageTag: << parameters.dockerImageTag >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+                dockerVolumePath: << parameters.dockerVolumePath >>
+                installCommand: << parameters.installCommand >>
+                localMountPath: << parameters.localMountPath >>
+                sshFingerprint: << parameters.sshFingerprint >>
+                sshKeyFilename: << parameters.sshKeyFilename >>
+    install-dockerize:
+        description: |
+            This job is for installing dockerize.
+        machine: true
+        parameters:
+            container:
+                default: php
+                type: string
+            dockerLanguage:
+                default: en_US.UTF-8
+                type: string
+            dockerTimezone:
+                default: UTC
+                type: string
+        steps:
+            - install-dockerize-command:
+                container: << parameters.container >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+    static-analysis:
+        description: |
+            This job is for running static analysis.
+        machine: true
+        parameters:
+            command:
+                default: make static-analysis
+                type: string
+            dependencyCheckSumFile:
+                default: ./composer.lock
+                type: string
+            dockerCheckSumDir:
+                default: ./docker
+                type: string
+            dockerComposeFile:
+                default: ./docker/docker-compose.ci.yml
+                type: string
+            dockerLanguage:
+                default: en_US.UTF-8
+                type: string
+            dockerTimezone:
+                default: UTC
+                type: string
+            stanResultDir:
+                default: ./build/logs/phpstan
+                type: string
+        steps:
+            - static-analysis-command:
+                command: << parameters.command >>
+                dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+                dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+                dockerComposeFile: << parameters.dockerComposeFile >>
+                dockerLanguage: << parameters.dockerLanguage >>
+                dockerTimezone: << parameters.dockerTimezone >>
+                stanResultDir: << parameters.stanResultDir >>
+orbs:
+    ci-caching: serbiatech/ci-caching@0.0.6
 version: 2.1
 
-orbs:
-  ci-caching: serbiatech/ci-caching@0.0.6
-
-# Orb jobs
-
-jobs:
-
-  # Install dependencies with docker
-
-  install-dependencies-with-docker:
-    machine: true
-    parameters:
-      dependencyCheckSumFile:
-        type: string
-        default: "./composer.lock"
-      dependencyCachePath:
-        type: string
-        default: "./vendor"
-      dependencyAdditionalCacheKey:
-        type: string
-        default: "v1"
-      sshKeyFilename:
-        type: string
-        default: "docker_rsa"
-      sshFingerprint:
-        type: string
-        default: ""
-      dockerImageTag:
-        type: string
-        default: "ci-composer"
-      dockerFolder:
-        type: string
-        default: "./docker/composer"
-      dockerAdditionalCacheKey:
-        type: string
-        default: "v1"
-      localMountPath:
-        type: string
-        default: "${PWD}"
-      dockerVolumePath:
-        type: string
-        default: "/var/www/html"
-      installCommand:
-        type: string
-        default: "install"
-      dockerTimezone:
-        type: string
-        default: "UTC"
-      dockerLanguage:
-        type: string
-        default: "en_US.UTF-8"
-    steps:
-      - install-dependencies-with-docker-command:
-          dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
-          dependencyCachePath: << parameters.dependencyCachePath >>
-          dependencyAdditionalCacheKey: << parameters.dependencyAdditionalCacheKey >>
-          sshKeyFilename: << parameters.sshKeyFilename >>
-          sshFingerprint: << parameters.sshFingerprint >>
-          dockerImageTag: << parameters.dockerImageTag >>
-          dockerFolder: << parameters.dockerFolder >>
-          dockerAdditionalCacheKey: << parameters.dockerAdditionalCacheKey >>
-          dockerVolumePath: << parameters.dockerVolumePath >>
-          localMountPath: << parameters.localMountPath >>
-          installCommand: << parameters.installCommand >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-
-  # Run coverage
-
-  coverage:
-    machine: true
-    parameters:
-      coverageDir:
-        type: string
-        default: "./build/logs/phpunit/coverage"
-      testResultDir:
-        type: string
-        default: "./build/logs/phpunit"
-      dockerComposeFile:
-        type: string
-        default: "./docker/docker-compose.ci.yml"
-      dockerCheckSumDir:
-        type: string
-        default: "./docker"
-      dependencyCheckSumFile:
-        type: string
-        default: "./composer.lock"
-      hostToWaitFor:
-        type: string
-        default: ""
-      command:
-        type: string
-        default: "make coverage"
-      dockerTimezone:
-        type: string
-        default: "UTC"
-      dockerLanguage:
-        type: string
-        default: "en_US.UTF-8"
-    steps:
-      - coverage-command:
-          coverageDir: << parameters.coverageDir >>
-          testResultDir: << parameters.testResultDir >>
-          dockerComposeFile: << parameters.dockerComposeFile >>
-          dockerCheckSumDir: << parameters.dockerCheckSumDir >>
-          dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
-          hostToWaitFor: << parameters.hostToWaitFor >>
-          command: << parameters.command >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-
-  # Run static analysis
-
-  static-analysis:
-    machine: true
-    parameters:
-      testResultDir:
-        type: string
-        default: "./build/logs/phpstan"
-      dockerComposeFile:
-        type: string
-        default: "./docker/docker-compose.ci.yml"
-      dockerCheckSumDir:
-        type: string
-        default: "./docker"
-      dependencyCheckSumFile:
-        type: string
-        default: "./composer.lock"
-      command:
-        type: string
-        default: "make static-analysis"
-      dockerTimezone:
-        type: string
-        default: "UTC"
-      dockerLanguage:
-        type: string
-        default: "en_US.UTF-8"
-    steps:
-      - static-analysis-command:
-          stanResultDir: << parameters.stanResultDir >>
-          dockerComposeFile: << parameters.dockerComposeFile >>
-          dockerCheckSumDir: << parameters.dockerCheckSumDir >>
-          dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
-          command: << parameters.command >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-
-  # Run code style
-
-  code-style:
-    machine: true
-    parameters:
-      testResultDir:
-        type: string
-        default: "./build/logs/phpcs"
-      dockerComposeFile:
-        type: string
-        default: "./docker/docker-compose.ci.yml"
-      dockerCheckSumDir:
-        type: string
-        default: "./docker"
-      dependencyCheckSumFile:
-        type: string
-        default: "./composer.lock"
-      command:
-        type: string
-        default: "make code-style"
-      dockerTimezone:
-        type: string
-        default: "UTC"
-      dockerLanguage:
-        type: string
-        default: "en_US.UTF-8"
-    steps:
-      - code-style-command:
-          csResultDir: << parameters.csResultDir >>
-          dockerComposeFile: << parameters.dockerComposeFile >>
-          dockerCheckSumDir: << parameters.dockerCheckSumDir >>
-          dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
-          command: << parameters.command >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-
-  # Run infection tests
-
-  infection:
-    machine: true
-    parameters:
-      testResultDir:
-        type: string
-        default: "./build/logs/infection"
-      dockerComposeFile:
-        type: string
-        default: "./docker/docker-compose.ci.yml"
-      dockerCheckSumDir:
-        type: string
-        default: "./docker"
-      dependencyCheckSumFile:
-        type: string
-        default: "./composer.lock"
-      command:
-        type: string
-        default: "make infection"
-      dockerTimezone:
-        type: string
-        default: "UTC"
-      dockerLanguage:
-        type: string
-        default: "en_US.UTF-8"
-    steps:
-      - infection-testing-command:
-          infectionResultDir: << parameters.infectionResultDir >>
-          dockerComposeFile: << parameters.dockerComposeFile >>
-          dockerCheckSumDir: << parameters.dockerCheckSumDir >>
-          dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
-          coverageDir: << parameters.coverageDir >>
-          hostToWaitFor: << parameters.hostToWaitFor >>
-          command: << parameters.command >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-
-  # Install dockerize
-
-  install-dockerize:
-    machine: true
-    parameters:
-      container:
-        type: string
-        default: "php"
-      dockerTimezone:
-        type: string
-        default: "UTC"
-      dockerLanguage:
-        type: string
-        default: "en_US.UTF-8"
-    steps:
-      - install-dockerize-command:
-          container: << parameters.container >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-
-# Orb commands
-
-commands:
-
-  # Add SSH key command
-
-  add-ssh-key-command:
-    parameters:
-      sshKeyFilename:
-        type: string
-        default: "docker_rsa"
-      sshFingerprint:
-        type: string
-        default: ""
-    steps:
-      - when:
-          condition: << parameters.sshFingerprint >>
-          steps:
-            - add_ssh_keys:
-                fingerprints:
-                  - << parameters.sshFingerprint >>
-            - run:
-                name: Copy ssh key
-                command: |
-                  SSH_FINGERPRINT=<< parameters.sshFingerprint >>
-                  cp ~/.ssh/id_rsa_"${SSH_FINGERPRINT//:}" ~/.ssh/<< parameters.sshKeyFilename >>
-
-  # Coverage command
-
-  coverage-command:
-    parameters:
-      coverageDir:
-        type: string
-        default: "./build/logs/phpunit/coverage"
-      testResultDir:
-        type: string
-        default: "./build/logs/phpunit"
-      dockerComposeFile:
-        type: string
-        default: "./docker/docker-compose.ci.yml"
-      dockerCheckSumDir:
-        type: string
-        default: "./docker"
-      dependencyCheckSumFile:
-        type: string
-        default: "./composer.lock"
-      hostToWaitFor:
-        type: string
-        default: ""
-      command:
-        type: string
-        default: "make coverage"
-      dockerTimezone:
-        type: string
-        default: "UTC"
-      dockerLanguage:
-        type: string
-        default: "en_US.UTF-8"
-    steps:
-      - ci-caching/run-docker-from-restored-caches:
-          dockerCheckSumDir: << parameters.dockerCheckSumDir >>
-          dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
-          dockerComposeFile: << parameters.dockerComposeFile >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-      - wait-for-host-command:
-          host: << parameters.hostToWaitFor >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-      - ci-caching/execute-in-container:
-          info: Execute tests with code coverage
-          container: php
-          dockerComposeFile: << parameters.dockerComposeFile >>
-          command: << parameters.command >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-      - store_artifacts:
-          path: << parameters.coverageDir >>
-      - store_test_results:
-          path: << parameters.testResultDir >>
-
-  # Static analysis command
-
-  static-analysis-command:
-    parameters:
-      stanResultDir:
-        type: string
-        default: "./build/logs/phpstan"
-      dockerComposeFile:
-        type: string
-        default: "./docker/docker-compose.ci.yml"
-      dockerCheckSumDir:
-        type: string
-        default: "./docker"
-      dependencyCheckSumFile:
-        type: string
-        default: "./composer.lock"
-      command:
-        type: string
-        default: "make static-analysis"
-      dockerTimezone:
-        type: string
-        default: "UTC"
-      dockerLanguage:
-        type: string
-        default: "en_US.UTF-8"
-    steps:
-      - ci-caching/run-docker-from-restored-caches:
-          dockerCheckSumDir: << parameters.dockerCheckSumDir >>
-          dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
-          dockerComposeFile: << parameters.dockerComposeFile >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-      - ci-caching/execute-in-container:
-          info: Execute static analysis
-          container: php
-          dockerComposeFile: << parameters.dockerComposeFile >>
-          command: << parameters.command >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-      - store_test_results:
-          path: << parameters.stanResultDir >>
-
-  # Code style command
-
-  code-style-command:
-    parameters:
-      csResultDir:
-        type: string
-        default: "./build/logs/phpcs"
-      dockerComposeFile:
-        type: string
-        default: "./docker/docker-compose.ci.yml"
-      dockerCheckSumDir:
-        type: string
-        default: "./docker"
-      dependencyCheckSumFile:
-        type: string
-        default: "./composer.lock"
-      command:
-        type: string
-        default: "make code-style"
-      dockerTimezone:
-        type: string
-        default: "UTC"
-      dockerLanguage:
-        type: string
-        default: "en_US.UTF-8"
-    steps:
-      - ci-caching/run-docker-from-restored-caches:
-          dockerCheckSumDir: << parameters.dockerCheckSumDir >>
-          dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
-          dockerComposeFile: << parameters.dockerComposeFile >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-      - ci-caching/execute-in-container:
-          info: Check code style
-          container: php
-          dockerComposeFile: << parameters.dockerComposeFile >>
-          command: << parameters.command >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-      - store_test_results:
-          path: << parameters.csResultDir >>
-
-  # Infection command
-
-  infection-testing-command:
-    parameters:
-      infectionResultDir:
-        type: string
-        default: "./build/logs/infection"
-      dockerComposeFile:
-        type: string
-        default: "./docker/docker-compose.ci.yml"
-      dockerCheckSumDir:
-        type: string
-        default: "./docker"
-      dependencyCheckSumFile:
-        type: string
-        default: "./composer.lock"
-      coverageDir:
-        type: string
-        default: "./build/logs/phpunit/coverage"
-      hostToWaitFor:
-        type: string
-        default: ""
-      command:
-        type: string
-        default: "make infection"
-      dockerTimezone:
-        type: string
-        default: "UTC"
-      dockerLanguage:
-        type: string
-        default: "en_US.UTF-8"
-    steps:
-      - ci-caching/run-docker-from-restored-caches:
-          dockerCheckSumDir: << parameters.dockerCheckSumDir >>
-          dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
-          dockerComposeFile: << parameters.dockerComposeFile >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-      - wait-for-host-command:
-          host: << parameters.hostToWaitFor >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-      - ci-caching/execute-in-container:
-          info: Execute Infection Testing
-          container: php
-          dockerComposeFile: << parameters.dockerComposeFile >>
-          command: << parameters.command >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-      - store_artifacts:
-          path: << parameters.infectionResultDir >>
-
-  # Install dependencies with docker command
-
-  install-dependencies-with-docker-command:
-    parameters:
-      dependencyCheckSumFile:
-        type: string
-        default: "./composer.lock"
-      dependencyCachePath:
-        type: string
-        default: "./vendor"
-      dependencyAdditionalCacheKey:
-        type: string
-        default: "v1"
-      sshKeyFilename:
-        type: string
-        default: "docker_rsa"
-      sshFingerprint:
-        type: string
-        default: ""
-      installCommand:
-        type: string
-        default: "install"
-      dockerImageTag:
-        type: string
-        default: "ci-composer"
-      dockerFolder:
-        type: string
-        default: "./docker/composer"
-      localMountPath:
-        type: string
-        default: "${PWD}"
-      dockerVolumePath:
-        type: string
-        default: "/var/www/html"
-      dockerAdditionalCacheKey:
-        type: string
-        default: "v1"
-      dockerTimezone:
-        type: string
-        default: "UTC"
-      dockerLanguage:
-        type: string
-        default: "en_US.UTF-8"
-    steps:
-      - checkout
-      - ci-caching/dependency-cache-load:
-          checkSumFile: << parameters.dependencyCheckSumFile >>
-          additionalCacheKey: << parameters.dependencyAdditionalCacheKey >>
-      - ci-caching/dependency-check:
-          cacheDataPath: << parameters.dependencyCachePath >>
-      - add-ssh-key-command:
-          sshKeyFilename: << parameters.sshKeyFilename >>
-          sshFingerprint: << parameters.sshFingerprint >>
-      - ci-caching/docker-images-cache-load:
-          dockerCheckSumDir: << parameters.dockerFolder >>
-          additionalCacheKey: << parameters.dockerAdditionalCacheKey >>
-          baseCacheName: << parameters.dockerImageTag >>
-      - ci-caching/docker-layers-load:
-          cacheFile: ~/<< parameters.dockerImageTag >>.tar
-      - run:
-          name: Install php dependencies
-          command: |
-            export ENV_USER_ID=$(id -u)
-            export ENV_GROUP_ID=$(id -g)
-            export ENV_LANGUAGE=<< parameters.dockerLanguage >>
-            export ENV_TIMEZONE=<< parameters.dockerTimezone >>
-            docker run -v ~/.ssh/<< parameters.sshKeyFilename >>:/home/www-data/.ssh/id_rsa:ro -v "<< parameters.localMountPath >>":<< parameters.dockerVolumePath >> << parameters.dockerImageTag >> << parameters.installCommand >>
-      - ci-caching/dependency-cache-save:
-          checkSumFile: << parameters.dependencyCheckSumFile >>
-          cacheDataPath: << parameters.dependencyCachePath >>
-          additionalCacheKey: << parameters.dependencyAdditionalCacheKey >>
-
-  # Dockerize command
-
-  install-dockerize-command:
-    parameters:
-      container:
-        type: string
-        default: "php"
-      dockerTimezone:
-        type: string
-        default: "UTC"
-      dockerLanguage:
-        type: string
-        default: "en_US.UTF-8"
-    steps:
-      - ci-caching/execute-in-container:
-          info: Install dockerize in << parameters.container >> container
-          container: << parameters.container >>
-          dockerTimezone: << parameters.dockerTimezone >>
-          dockerLanguage: << parameters.dockerLanguage >>
-          command: |
-            wget https://github.com/jwilder/dockerize/releases/download/v0.6.1/dockerize-alpine-linux-amd64-v0.6.1.tar.gz \
-            && sudo tar -C /usr/local/bin -xzvf dockerize-alpine-linux-amd64-v0.6.1.tar.gz \
-            && rm dockerize-alpine-linux-amd64-v0.6.1.tar.gz
-
-  # Wait for host command
-
-  wait-for-host-command:
-    parameters:
-      info:
-        type: string
-        default: "Wait for host"
-      host:
-        type: string
-        default: ""
-      container:
-        type: string
-        default: php
-      dockerTimezone:
-        type: string
-        default: "UTC"
-      dockerLanguage:
-        type: string
-        default: "en_US.UTF-8"
-    steps:
-      - when:
-          condition: << parameters.host >>
-          steps:
-            - install-dockerize-command:
-                container: php
-                dockerTimezone: << parameters.dockerTimezone >>
-                dockerLanguage: << parameters.dockerLanguage >>
-            - ci-caching/execute-in-container:
-                info: << parameters.info >>
-                container: << parameters.container >>
-                dockerTimezone: << parameters.dockerTimezone >>
-                dockerLanguage: << parameters.dockerLanguage >>
-                command: dockerize -wait << parameters.host >> -timeout 1m

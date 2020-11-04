@@ -1,0 +1,21 @@
+description: >
+  This command add ssh key.
+parameters:
+  sshKeyFilename:
+    type: string
+    default: "docker_rsa"
+  sshFingerprint:
+    type: string
+    default: ""
+steps:
+  - when:
+      condition: << parameters.sshFingerprint >>
+      steps:
+        - add_ssh_keys:
+            fingerprints:
+              - << parameters.sshFingerprint >>
+        - run:
+            name: Copy ssh key
+            command: |
+              SSH_FINGERPRINT=<< parameters.sshFingerprint >>
+              cp ~/.ssh/id_rsa_"${SSH_FINGERPRINT//:}" ~/.ssh/<< parameters.sshKeyFilename >>

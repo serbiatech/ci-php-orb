@@ -1,0 +1,7 @@
+version: 2.1
+
+description: >
+  This Orb provides commands and jobs for running PHP tests.
+
+orbs:
+  ci-caching: serbiatech/ci-caching@0.0.6

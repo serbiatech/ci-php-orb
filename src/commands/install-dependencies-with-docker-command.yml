@@ -1,0 +1,70 @@
+description: >
+  This command install dependencies from separate docker container.
+parameters:
+  dependencyCheckSumFile:
+    type: string
+    default: "./composer.lock"
+  dependencyCachePath:
+    type: string
+    default: "./vendor"
+  dependencyAdditionalCacheKey:
+    type: string
+    default: "v1"
+  sshKeyFilename:
+    type: string
+    default: "docker_rsa"
+  sshFingerprint:
+    type: string
+    default: ""
+  installCommand:
+    type: string
+    default: "install"
+  dockerImageTag:
+    type: string
+    default: "ci-composer"
+  dockerFolder:
+    type: string
+    default: "./docker/composer"
+  localMountPath:
+    type: string
+    default: "${PWD}"
+  dockerVolumePath:
+    type: string
+    default: "/var/www/html"
+  dockerAdditionalCacheKey:
+    type: string
+    default: "v1"
+  dockerTimezone:
+    type: string
+    default: "UTC"
+  dockerLanguage:
+    type: string
+    default: "en_US.UTF-8"
+steps:
+  - checkout
+  - ci-caching/dependency-cache-load:
+      checkSumFile: << parameters.dependencyCheckSumFile >>
+      additionalCacheKey: << parameters.dependencyAdditionalCacheKey >>
+  - ci-caching/dependency-check:
+      cacheDataPath: << parameters.dependencyCachePath >>
+  - add-ssh-key-command:
+      sshKeyFilename: << parameters.sshKeyFilename >>
+      sshFingerprint: << parameters.sshFingerprint >>
+  - ci-caching/docker-images-cache-load:
+      dockerCheckSumDir: << parameters.dockerFolder >>
+      additionalCacheKey: << parameters.dockerAdditionalCacheKey >>
+      baseCacheName: << parameters.dockerImageTag >>
+  - ci-caching/docker-layers-load:
+      cacheFile: ~/<< parameters.dockerImageTag >>.tar
+  - run:
+      name: Install php dependencies
+      command: |
+        export ENV_USER_ID=$(id -u)
+        export ENV_GROUP_ID=$(id -g)
+        export ENV_LANGUAGE=<< parameters.dockerLanguage >>
+        export ENV_TIMEZONE=<< parameters.dockerTimezone >>
+        docker run -v ~/.ssh/<< parameters.sshKeyFilename >>:/home/www-data/.ssh/id_rsa:ro -v "<< parameters.localMountPath >>":<< parameters.dockerVolumePath >> << parameters.dockerImageTag >> << parameters.installCommand >>
+  - ci-caching/dependency-cache-save:
+      checkSumFile: << parameters.dependencyCheckSumFile >>
+      cacheDataPath: << parameters.dependencyCachePath >>
+      additionalCacheKey: << parameters.dependencyAdditionalCacheKey >>

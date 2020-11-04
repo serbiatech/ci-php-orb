@@ -1,0 +1,52 @@
+description: >
+  This command run coverage tests.
+parameters:
+  coverageDir:
+    type: string
+    default: "./build/logs/phpunit/coverage"
+  testResultDir:
+    type: string
+    default: "./build/logs/phpunit"
+  dockerComposeFile:
+    type: string
+    default: "./docker/docker-compose.ci.yml"
+  dockerCheckSumDir:
+    type: string
+    default: "./docker"
+  dependencyCheckSumFile:
+    type: string
+    default: "./composer.lock"
+  hostToWaitFor:
+    type: string
+    default: ""
+  command:
+    type: string
+    default: "make coverage"
+  dockerTimezone:
+    type: string
+    default: "UTC"
+  dockerLanguage:
+    type: string
+    default: "en_US.UTF-8"
+steps:
+  - ci-caching/run-docker-from-restored-caches:
+      dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+      dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+      dockerComposeFile: << parameters.dockerComposeFile >>
+      dockerTimezone: << parameters.dockerTimezone >>
+      dockerLanguage: << parameters.dockerLanguage >>
+  - wait-for-host-command:
+      host: << parameters.hostToWaitFor >>
+      dockerTimezone: << parameters.dockerTimezone >>
+      dockerLanguage: << parameters.dockerLanguage >>
+  - ci-caching/execute-in-container:
+      info: Execute tests with code coverage
+      container: php
+      dockerComposeFile: << parameters.dockerComposeFile >>
+      command: << parameters.command >>
+      dockerTimezone: << parameters.dockerTimezone >>
+      dockerLanguage: << parameters.dockerLanguage >>
+  - store_artifacts:
+      path: << parameters.coverageDir >>
+  - store_test_results:
+      path: << parameters.testResultDir >>

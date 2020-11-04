@@ -1,0 +1,50 @@
+description: >
+  This command run infection tests.
+parameters:
+  infectionResultDir:
+    type: string
+    default: "./build/logs/infection"
+  dockerComposeFile:
+    type: string
+    default: "./docker/docker-compose.ci.yml"
+  dockerCheckSumDir:
+    type: string
+    default: "./docker"
+  dependencyCheckSumFile:
+    type: string
+    default: "./composer.lock"
+  coverageDir:
+    type: string
+    default: "./build/logs/phpunit/coverage"
+  hostToWaitFor:
+    type: string
+    default: ""
+  command:
+    type: string
+    default: "make infection"
+  dockerTimezone:
+    type: string
+    default: "UTC"
+  dockerLanguage:
+    type: string
+    default: "en_US.UTF-8"
+steps:
+  - ci-caching/run-docker-from-restored-caches:
+      dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+      dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+      dockerComposeFile: << parameters.dockerComposeFile >>
+      dockerTimezone: << parameters.dockerTimezone >>
+      dockerLanguage: << parameters.dockerLanguage >>
+  - wait-for-host-command:
+      host: << parameters.hostToWaitFor >>
+      dockerTimezone: << parameters.dockerTimezone >>
+      dockerLanguage: << parameters.dockerLanguage >>
+  - ci-caching/execute-in-container:
+      info: Execute Infection Testing
+      container: php
+      dockerComposeFile: << parameters.dockerComposeFile >>
+      command: << parameters.command >>
+      dockerTimezone: << parameters.dockerTimezone >>
+      dockerLanguage: << parameters.dockerLanguage >>
+  - store_artifacts:
+      path: << parameters.infectionResultDir >>
