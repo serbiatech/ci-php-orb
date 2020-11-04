@@ -1,0 +1,43 @@
+description: >
+  This job is for running infection tests.
+
+parameters:
+  infectionResultDir:
+    type: string
+    default: "./build/logs/infection"
+  dockerComposeFile:
+    type: string
+    default: "./docker/docker-compose.ci.yml"
+  dockerCheckSumDir:
+    type: string
+    default: "./docker"
+  dependencyCheckSumFile:
+    type: string
+    default: "./composer.lock"
+  coverageDir:
+    type: string
+    default: "./build/logs/phpunit/coverage"
+  hostToWaitFor:
+    type: string
+    default: ""
+  command:
+    type: string
+    default: "make infection"
+  dockerTimezone:
+    type: string
+    default: "UTC"
+  dockerLanguage:
+    type: string
+    default: "en_US.UTF-8"
+machine: true
+steps:
+  - infection-testing-command:
+      infectionResultDir: << parameters.infectionResultDir >>
+      dockerComposeFile: << parameters.dockerComposeFile >>
+      dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+      dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+      coverageDir: << parameters.coverageDir >>
+      hostToWaitFor: << parameters.hostToWaitFor >>
+      command: << parameters.command >>
+      dockerTimezone: << parameters.dockerTimezone >>
+      dockerLanguage: << parameters.dockerLanguage >>

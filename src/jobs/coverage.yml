@@ -1,0 +1,43 @@
+description: >
+  This job is for running coverage.
+
+parameters:
+  coverageDir:
+    type: string
+    default: "./build/logs/phpunit/coverage"
+  testResultDir:
+    type: string
+    default: "./build/logs/phpunit"
+  dockerComposeFile:
+    type: string
+    default: "./docker/docker-compose.ci.yml"
+  dockerCheckSumDir:
+    type: string
+    default: "./docker"
+  dependencyCheckSumFile:
+    type: string
+    default: "./composer.lock"
+  hostToWaitFor:
+    type: string
+    default: ""
+  command:
+    type: string
+    default: "make coverage"
+  dockerTimezone:
+    type: string
+    default: "UTC"
+  dockerLanguage:
+    type: string
+    default: "en_US.UTF-8"
+machine: true
+steps:
+  - coverage-command:
+      coverageDir: << parameters.coverageDir >>
+      testResultDir: << parameters.testResultDir >>
+      dockerComposeFile: << parameters.dockerComposeFile >>
+      dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+      dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+      hostToWaitFor: << parameters.hostToWaitFor >>
+      command: << parameters.command >>
+      dockerTimezone: << parameters.dockerTimezone >>
+      dockerLanguage: << parameters.dockerLanguage >>

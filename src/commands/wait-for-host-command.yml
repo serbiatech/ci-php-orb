@@ -1,0 +1,32 @@
+description: >
+  This command set timout and wait for external host.
+parameters:
+  info:
+    type: string
+    default: "Wait for host"
+  host:
+    type: string
+    default: ""
+  container:
+    type: string
+    default: php
+  dockerTimezone:
+    type: string
+    default: "UTC"
+  dockerLanguage:
+    type: string
+    default: "en_US.UTF-8"
+steps:
+  - when:
+      condition: << parameters.host >>
+      steps:
+        - install-dockerize-command:
+            container: php
+            dockerTimezone: << parameters.dockerTimezone >>
+            dockerLanguage: << parameters.dockerLanguage >>
+        - ci-caching/execute-in-container:
+            info: << parameters.info >>
+            container: << parameters.container >>
+            dockerTimezone: << parameters.dockerTimezone >>
+            dockerLanguage: << parameters.dockerLanguage >>
+            command: dockerize -wait << parameters.host >> -timeout 1m

@@ -1,0 +1,35 @@
+description: >
+  This job is for running static analysis.
+
+parameters:
+  stanResultDir:
+    type: string
+    default: "./build/logs/phpstan"
+  dockerComposeFile:
+    type: string
+    default: "./docker/docker-compose.ci.yml"
+  dockerCheckSumDir:
+    type: string
+    default: "./docker"
+  dependencyCheckSumFile:
+    type: string
+    default: "./composer.lock"
+  command:
+    type: string
+    default: "make static-analysis"
+  dockerTimezone:
+    type: string
+    default: "UTC"
+  dockerLanguage:
+    type: string
+    default: "en_US.UTF-8"
+machine: true
+steps:
+  - static-analysis-command:
+      stanResultDir: << parameters.stanResultDir >>
+      dockerComposeFile: << parameters.dockerComposeFile >>
+      dockerCheckSumDir: << parameters.dockerCheckSumDir >>
+      dependencyCheckSumFile: << parameters.dependencyCheckSumFile >>
+      command: << parameters.command >>
+      dockerTimezone: << parameters.dockerTimezone >>
+      dockerLanguage: << parameters.dockerLanguage >>
